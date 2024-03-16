@@ -1,0 +1,57 @@
+{
+	"files.associations": {
+		"iterator": "cpp",
+		"random": "cpp",
+		"optional": "cpp",
+		"system_error": "cpp",
+		"cmath": "cpp",
+		"fstream": "cpp",
+		"algorithm": "cpp",
+		"array": "cpp",
+		"*.tcc": "cpp",
+		"cctype": "cpp",
+		"chrono": "cpp",
+		"clocale": "cpp",
+		"cstdarg": "cpp",
+		"cstdint": "cpp",
+		"cstdio": "cpp",
+		"cstdlib": "cpp",
+		"ctime": "cpp",
+		"cwchar": "cpp",
+		"cwctype": "cpp",
+		"deque": "cpp",
+		"unordered_map": "cpp",
+		"vector": "cpp",
+		"exception": "cpp",
+		"functional": "cpp",
+		"initializer_list": "cpp",
+		"iosfwd": "cpp",
+		"iostream": "cpp",
+		"istream": "cpp",
+		"limits": "cpp",
+		"new": "cpp",
+		"ostream": "cpp",
+		"numeric": "cpp",
+		"ratio": "cpp",
+		"sstream": "cpp",
+		"stdexcept": "cpp",
+		"streambuf": "cpp",
+		"tuple": "cpp",
+		"type_traits": "cpp",
+		"utility": "cpp",
+		"typeinfo": "cpp"
+	},
+	"C_Cpp.errorSquiggles": "disabled",
+	"C_Cpp.default.compilerPath": "C:\\mingw64\\bin\\g++.exe",
+	"editor.rulers": [
+		100
+	],
+	"C_Cpp.default.systemIncludePath": [
+		"${config:vexrobotics.vexcode.Cpp.Sdk.Home}/V5/V5_20220726_10_00_00/vexv5/gcc/include/sys"
+	],
+	"cSpell.words": [
+		"SCRAT",
+		"SCRATETTE",
+		"triball"
+	]
+}
