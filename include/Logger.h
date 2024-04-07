@@ -8,7 +8,7 @@ class Logger {
 public:
     /// @brief     Opens file stream and writes column headers.
     /// @param hardware    Uses brain from Hardware.
-    /// @param file_name    Name of file.
+    /// @param file_name    Name of file (including .txt/.csv).
     /// @param column_names    Vector of column names for data to store in each column.
     Logger(Hardware* hardware, std::string fileName, std::vector<std::string> column_names);
 

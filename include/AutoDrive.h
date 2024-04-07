@@ -9,7 +9,7 @@ class AutoDrive : public Drive {
 public:
     AutoDrive(Hardware* hardware, RobotConfig* robotConfig, Telemetry* telemetry);
 
-    /// @brief Main function that initiates to robot.
+    /// @brief Main function that tells robot to drive
     void drive();
 
     

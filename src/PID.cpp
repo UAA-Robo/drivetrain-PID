@@ -2,7 +2,7 @@
 
 PID::PID(Hardware* hardware, float setpoint, float P, float I, float D) {
     hw = hardware;
-    log = new Logger(hw, "PID", {"P", "I", "D", "Control", "Process", "Setpoint"});
+    log = new Logger(hw, "PID.csv", {"P", "I", "D", "Control", "Process", "Setpoint"}); 
     this->setpoint = setpoint;
     this->P = P;
     this->I = I;
@@ -29,7 +29,7 @@ double PID::update_control_value(double process_value) {
 
         control = (P * error + I * integral + D * derivative);
         
-        log->add_data({P, I, D, control, process, setpoint});
+        log->add_data({P, I, D, control, process, setpoint}); // TODO: will this take to long?
 
         return control;
 
