@@ -8,7 +8,7 @@ Logger::Logger(Hardware* hardware, std::string file_name, std::vector<std::strin
         data_log.open(file, std::ofstream::out | std::ofstream::trunc);
         
         //Label column names
-        data_log << "secElapsed, ";
+        data_log << "msecElapsed, ";
         for (int i = 0; i < column_names.size() - 1; i++) {
             data_log << column_names.at(i) << ", ";
         }
@@ -28,7 +28,7 @@ void Logger::add_data(std::vector<double> row) {
     if (hw->brain.SDcard.isInserted()){
         data_log.open(file, std::ofstream::app);
 
-        data_log << hw->brain.timer(vex::timeUnits::sec) << ", ";
+        data_log << hw->brain.timer(vex::timeUnits::msec) << ", ";
 
         for (int i = 0; i < row.size() - 1; i++) {
             data_log << row.at(i) << ", ";
