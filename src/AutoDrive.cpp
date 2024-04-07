@@ -7,4 +7,30 @@ AutoDrive::AutoDrive(Hardware *hardware, RobotConfig *robotConfig, Telemetry *te
 
 void AutoDrive::drive() {}
 
-void AutoDrive::drive_to_position(std::pair<double, double> position) {}
+void AutoDrive::drive_to_position(std::pair<double, double> position) {
+
+    double distance = tm->get_distance_between_points(tm->get_current_position(), position);
+    double voltage = 0; // In volts
+    
+    // Controls voltage to prevent overshot.
+    PID overshoot_PID(  hw, 
+                        0,  // Distance setpoint.
+                        1.5, // P
+                        1.2, // I
+                        0.0); // D
+
+
+
+    // Drive until wheel voltage is 0 (PID controls voltage which controls position)
+    while (hw->drivetrain.voltage(vex::voltageUnits::volt) > 0)
+    {
+        voltage = overshoot_PID.update_control_value(distance);
+        hw->drivetrain.spin(vex::directionType::fwd, voltage, vex::voltageUnits::volt);
+        
+        vex::wait(50, vex::timeUnits::msec); // Wait for odometry wheels to update
+        distance = tm->get_distance_between_points(tm->get_current_position(), position);
+    }
+
+    hw->drivetrain.stop(); // Stop wheels
+    vex::wait(50, vex::timeUnits::msec); // Wait for odometry wheels to update
+}

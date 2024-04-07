@@ -1,6 +1,7 @@
 #pragma once
 #include "Drive.h"
 #include "vex.h"
+#include "PID.h"
 
 /// @brief   Contains the methods for the robot to autonomously navigate.
 class AutoDrive : public Drive {
