@@ -28,9 +28,9 @@ void AutoDrive::drive_to_position(std::pair<double, double> position) {
     
     Logger overshoot_log(hw, "overshoot.csv", {"distance", "voltage"});
 
+
     // Drive until wheel voltage is 0 (PID controls voltage which controls position)
-    while (hw->drivetrain.voltage(vex::voltageUnits::volt) > 0)
-    {
+    do {
         voltage = overshoot_PID.update_control_value(distance);
         hw->drivetrain.spin(vex::directionType::fwd, voltage, vex::voltageUnits::volt);
         
@@ -38,6 +38,7 @@ void AutoDrive::drive_to_position(std::pair<double, double> position) {
         vex::wait(50, vex::timeUnits::msec); // Wait for odometry wheels to update
         distance = tm->get_distance_between_points(tm->get_current_position(), position);
     }
+    while (hw->drivetrain.voltage(vex::voltageUnits::volt) > 0);
 
     hw->drivetrain.stop(); // Stop wheels
     vex::wait(50, vex::timeUnits::msec); // Wait for odometry wheels to update
