@@ -8,9 +8,9 @@ Logger::Logger(Hardware* hardware, std::string file_name, std::vector<std::strin
         data_log.open(file, std::ofstream::out | std::ofstream::trunc);
         
         //Label column names
-        data_log << "msecElapsed, ";
+        data_log << "msecElapsed,";
         for (int i = 0; i < column_names.size() - 1; i++) {
-            data_log << column_names.at(i) << ", ";
+            data_log << column_names.at(i) << ",";
         }
         data_log << column_names.at(column_names.size() - 1) << "\n";
         data_log.close();

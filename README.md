@@ -1,2 +1,2 @@
-# Vex-U-Over-Under
-This is our competition codebase
+# Drivetrain PID
+This is our codebase to tune a PID with gradient descent.
