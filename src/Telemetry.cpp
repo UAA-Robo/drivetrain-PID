@@ -94,6 +94,26 @@ double Telemetry::get_distance_between_points(std::pair<double, double> initial_
     return distance_to_final_position;
 }
 
+double Telemetry::get_signed_distance_to_position(std::pair<double, double> position) {
+
+    std::pair<double, double> current_position = get_current_position();
+    double current_heading = get_current_heading() * M_PI / 180.0; // In radians
+
+
+    std::pair<double, double> heading_vector = {cos(current_heading), sin(current_heading)};
+    std::pair<double, double> position_vector = {position.first - current_position.first,
+                                                    position.second - current_position.second};
+
+    double distance_to_position = sqrt(pow(position_vector.first, 2) + pow(position_vector.second, 2));
+
+    // Dot product to determine if the target is in front or behind
+    double dot_product = heading_vector.first * position_vector.first + 
+                         heading_vector.second * position_vector.second;
+
+    // If dot product is positive, the target is in front, else distance is negative
+    return dot_product >= 0 ? distance_to_position : -distance_to_position;
+}
+
 double Telemetry ::get_heading_between_points(std::pair<double, double> initial_position, 
     std::pair<double, double> final_position) {
     double angle_to_final_position = (atan2((final_position.second - initial_position.second), 

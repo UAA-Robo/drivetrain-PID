@@ -13,7 +13,7 @@ public:
     /// @return Does not return anything but VEX requires type int return.
     static int update_position(void *param);
 
-    //In inches
+
     /// @brief Calculates the distance (in inches) between to points
     /// @param initial_position Pair of doubles {x, y} that represent the first coordinate 
     /// (where the origin is the center of the field)
@@ -22,6 +22,13 @@ public:
     /// @return Returns the distance in inches
     double get_distance_between_points(std::pair<double, double> initial_position, 
         std::pair<double, double> final_position);
+
+    /// @brief Calculates the signed distance (in inches) between to the robots current position
+    ///     and the given position. Positive if the robot is facing toward the position, otherwise negative.
+    /// @param position Pair of doubles {x, y} that represent the position goal.
+    /// (where the origin is the center of the field)
+    /// @return Returns the distance in inches (positive of negative)
+    double get_signed_distance_to_position(std::pair<double, double> position);
 
     /// @brief Calculates the counterclockwise angle from the x axis (of the field) 
     /// to the line formed from by 2 points.

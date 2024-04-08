@@ -7,7 +7,7 @@
 class PID {
 
 public:
-    PID(Hardware* hardware, float setpoint, float P, float I, float D);
+    PID(Hardware* hardware, float setpoint, float min_control, float max_control, float P, float I, float D);
 
 
     /// @brief  Approximation of PID to change the control value based on the new value. 
@@ -23,6 +23,9 @@ private:
     double setpoint = 0;  // What your goal value is (i.e. distance from target == 0 )
     double process = 0;  // What value you are trying to affect (i.e. distance from target)
     double control = 0;  // What thing you change to effect that value (i.e. velocity of drivetrain)
+
+    double min_control = 0;
+    double max_control = 0;
 
     double P = 0;
     double I = 0;
