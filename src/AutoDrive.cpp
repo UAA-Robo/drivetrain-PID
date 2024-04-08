@@ -28,7 +28,7 @@ void AutoDrive::drive_to_position(std::pair<double, double> position) {
                         0.0, // I
                         0.0); // D
 
-    // Drive until wheel voltage is 0 (PID controls voltage which controls position)
+    // Drive until wheel voltage is with +/- 0.1V of 0 (PID controls voltage which controls position)
     do {
         distance = tm->get_signed_distance_to_position(position);
         voltage = overshoot_PID.update_control_value(distance);
@@ -36,7 +36,7 @@ void AutoDrive::drive_to_position(std::pair<double, double> position) {
         
         vex::wait(50, vex::timeUnits::msec); // Wait for odometry wheels to update
     }
-    while (hw->drivetrain.voltage(vex::voltageUnits::volt) > 0);
+    while (fabs(hw->drivetrain.voltage(vex::voltageUnits::volt) - 0) >= 0.1);
 
     hw->drivetrain.stop(); // Stop wheels
     vex::wait(50, vex::timeUnits::msec); // Wait for odometry wheels to update
