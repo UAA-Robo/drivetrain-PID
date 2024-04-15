@@ -6,7 +6,8 @@ AutoDrive::AutoDrive(Hardware *hardware, RobotConfig *robotConfig, Telemetry *te
 }
 
 void AutoDrive::drive() {
-    tune_PID_with_gradient_descent();
+    //tune_PID_with_gradient_descent();
+    random_PID();
 }
 
 void AutoDrive::tune_PID_with_gradient_descent() {
@@ -82,10 +83,51 @@ void AutoDrive::tune_PID_with_gradient_descent() {
         //prev_I = I;
         prev_D = D;
 
-        vex::wait(5000, vex::timeUnits::msec); // Wait 5 msec
+        vex::wait(5000, vex::timeUnits::msec); // Wait 5 sec
     }
 
 
+}
+
+void AutoDrive::random_PID() {
+
+    float I = 0.0;
+
+
+    float TIMEOUT = 5000; // 5,000ms = 5s timeout
+    int direction = 1;
+    const int distance = 36; // Inches
+    float settling_time = 0;
+
+    const float MIN = 0.0;
+    const float MAX = 1.5;
+    const float STEP = 0.1;
+    int i = 0;
+
+    Logger log(hw, "random_PID.csv", {"Distance (in)", "P", "I", "D","Settling_Time (ms)"}); 
+
+
+    for (double P=MIN; P <= MAX; P+= STEP) {
+
+        for (double D=MIN; D <=MAX; D += STEP) {
+            tm->set_position({0,0});
+            tm->set_heading(0);
+
+            i % 2 == 0 ? direction = 1 : direction = -1; // Forward on even is, backward on negative i
+            i++;
+
+            settling_time = drive_to_position_PID({distance * direction, 0}, P, I, D, TIMEOUT);
+            log.add_data({distance, P, I, D, settling_time});
+
+            hw->controller.Screen.clearScreen();
+            hw->controller.Screen.setCursor(1,1);
+            hw->controller.Screen.print("P: %.4lf", P);
+            hw->controller.Screen.setCursor(2,1);
+            hw->controller.Screen.print("D: %.4lf\n", D);
+
+            vex::wait(1000, vex::timeUnits::msec); // Wait 1 sec
+        }
+    }
 }
 
 

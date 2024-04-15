@@ -14,6 +14,8 @@ public:
 
     // Perform gradient descent
     void tune_PID_with_gradient_descent();
+    
+    void random_PID();
 
     
 
