@@ -14,18 +14,22 @@ void AutoDrive::tune_PID_with_gradient_descent() {
     const int ITERATIONS = 100;
     const float LEARNING_RATE = 0.01;
 
-    float P = 0;
-    float I = 0;
-    float D = 0;
+
+    const float MIN = 0.5;
+    const float MAX = 1.5;
+
+    float P = 0.5;
+    float I = 0.0;
+    float D = 0.05;
     float E = 0; // Error (settling time)
 
-    float prev_P = P;
+    float prev_P = 0;
     //float prev_I = I;
-    float prev_D = D;
-    float prev_E = E;
+    float prev_D = 0;
+    float prev_E = 0;
 
     float TIMEOUT = 10000; // 10,000ms = 10s timeout
-    float E_AT_TIMEOUT = 1000; // Large number for E if it times out
+    float E_AT_TIMEOUT = 20000; // Large number for E if it times out (basically 20 seconds)
     int direction = 1;
     const int distance = 36; // Inches
     
@@ -36,22 +40,42 @@ void AutoDrive::tune_PID_with_gradient_descent() {
     for (int i = 0; i < ITERATIONS; i++) {
         tm->set_position({0,0});
         tm->set_heading(0);
+        
+        hw->controller.Screen.clearScreen();
+        hw->controller.Screen.setCursor(1,1);
+        hw->controller.Screen.print("P: %.4lf", P);
+        hw->controller.Screen.setCursor(2,1);
+        hw->controller.Screen.print("D: %.4lf\n", D);
 
-        i % 2 ? direction = 1 : direction = -1; // Forward on even is, backward on negative i
+        i % 2 == 0 ? direction = 1 : direction = -1; // Forward on even is, backward on negative i
         E = drive_to_position_PID({distance * direction, 0}, P, I, D, TIMEOUT);
-        if (E >= TIMEOUT) E = E_AT_TIMEOUT;
+        if (E >= TIMEOUT || E <= 500) E = E_AT_TIMEOUT; // If E greater than timeout or didn't move, set large error
 
         log.add_data({distance, P, I, D, E});
-        hw->controller.Screen.clearScreen();
-        hw->controller.Screen.setCursor(0,0);
-        hw->controller.Screen.print("P: %.4lf\n", P);
-        hw->controller.Screen.print("D: %.4lf\n", D);
+        hw->controller.Screen.setCursor(3,1);
         hw->controller.Screen.print("E: %.4lf\n", E);
 
     
-        P = P - (E - prev_E) / (P - prev_P) * LEARNING_RATE;
-        //I = P - (E - prev_E) / (I - prev_I) * LEARNING_RATE;
-        P = D - (E - prev_E) / (D - prev_D) * LEARNING_RATE;
+        float P_diff = P - prev_P;
+        if (P_diff == 0) P_diff = 0.000000000001; // Avoid divide by 0 error
+
+        P = P - (E - prev_E) / P_diff * LEARNING_RATE;
+        if (P > MAX) P = MAX;
+        else if (P < MIN) P = MIN;
+
+        // float I_diff = I - prev_I;
+        //if (I_diff == 0)) I_diff = 0.000000000001; // Avoid divide by 0 error
+        // I = P - (E - prev_E) / I_diff * LEARNING_RATE;
+        // if (I > MAX) I = MAX;
+        // else if (I < MIN) I = MIN;
+
+        float D_diff = D - prev_D;
+        if (D_diff == 0) D_diff = 0.000000000001; // Avoid divide by 0 error
+        D = D - (E - prev_E) / D_diff * LEARNING_RATE;
+        if (D > MAX) D = MAX;
+        else if (D < MIN) D = MIN;
+
+        std::cout <<"P: " << P <<  ", D: " << D << std::endl;
 
         prev_E = E;
         prev_P = P;
@@ -75,8 +99,8 @@ double AutoDrive::drive_to_position_PID(std::pair<double, double> position, doub
     // Controls voltage to prevent overshot.
     PID overshoot_PID(  hw, 
                         0,  // Distance setpoint
-                        -12, // Max output voltage
-                        12, // Min output voltage
+                        -6, // Max output voltage
+                        6, // Min output voltage
                         P, // P
                         I, // I
                         D); // D
@@ -95,5 +119,6 @@ double AutoDrive::drive_to_position_PID(std::pair<double, double> position, doub
 
     hw->drivetrain.stop(); // Stop wheels
     vex::wait(50, vex::timeUnits::msec); // Wait for odometry wheels to update
-    return hw->brain.timer(vex::timeUnits::msec) -  init_timestamp <= timeout;
+    
+    return hw->brain.timer(vex::timeUnits::msec) -  init_timestamp;
 }
