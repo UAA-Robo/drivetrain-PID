@@ -2,7 +2,9 @@
 
 PID::PID(Hardware* hardware, float setpoint, float min_control, float max_control, float P, float I, float D) {
     hw = hardware;
-    log = new Logger(hw, "PID.csv", {"P", "I", "D", "Control", "Process", "Setpoint"}); 
+    std::string file_name = "P" + Logger::to_string(P).substr(0, 5) + "_I" + Logger::to_string(I).substr(0, 5) + "_D" + Logger::to_string(D).substr(0, 5) + Logger::to_string(".csv");
+
+    log = new Logger(hw, file_name, {"P", "I", "D", "Control", "Process", "Setpoint"}); 
 
     this->setpoint = setpoint;
     this->min_control = min_control;

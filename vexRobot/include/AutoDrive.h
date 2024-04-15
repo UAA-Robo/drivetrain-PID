@@ -12,6 +12,9 @@ public:
     /// @brief Main function that tells robot to drive
     void drive();
 
+    // Perform gradient descent
+    void tune_PID_with_gradient_descent();
+
     
 
 private:
@@ -22,7 +25,12 @@ private:
     /// @brief Moves the drivetrain STRAIGHT until the distance between the current position add
     ///  (goal) position is almost 0.
     /// @param position Pair of doubles: {X, Y}
-    void drive_to_position(std::pair<double, double> position);
+    /// @param P 
+    /// @param I 
+    /// @param D 
+    /// @param timeout  Timeout in ms
+    /// @return Time taken to run (ms)
+    double drive_to_position_PID(std::pair<double, double> position,  double P, double I, double D, double timeout);
 
 
 

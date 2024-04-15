@@ -3,12 +3,16 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <string>
 #include <algorithm>
 #include <numeric>
 #include <fstream>
 #include <ctime>
 #include <vector>
 #include <iostream>
+#include <sstream>
+
+
 
 #include "v5.h"
 #include "v5_vcs.h"

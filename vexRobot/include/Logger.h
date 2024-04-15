@@ -20,10 +20,25 @@ public:
     ///              column in the same order as the column_names initialized in the constructor.
     void add_data(std::vector<double> row);
 
+    /// @brief Converts anything to a string (VEX doesn't have std::to_string)
+    /// @param value Any value to convert t a string.
+    /// @return The value as a string.
+    template <typename T>
+    static std::string to_string(T value);
+
 
 private:
     Hardware* hw;
     std::ofstream data_log;
     std::string file;
 };
+
+
+template <typename T>
+std::string Logger::to_string(T value)
+{
+    std::ostringstream os ;
+    os << value ;
+    return os.str() ;
+}
 

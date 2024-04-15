@@ -37,3 +37,4 @@ void Logger::add_data(std::vector<double> row) {
         data_log.close();
     }
 }
+
