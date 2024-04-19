@@ -17,6 +17,8 @@ public:
     
     void random_PID();
 
+    void hand_tune_PID();
+
     
 
 private:

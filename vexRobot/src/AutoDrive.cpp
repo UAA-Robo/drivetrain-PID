@@ -6,20 +6,34 @@ AutoDrive::AutoDrive(Hardware *hardware, RobotConfig *robotConfig, Telemetry *te
 }
 
 void AutoDrive::drive() {
-    //tune_PID_with_gradient_descent();
-    random_PID();
+    tune_PID_with_gradient_descent();
+    //random_PID();
+    //hand_tune_PID();
+}
+
+void AutoDrive::hand_tune_PID() {
+    float P = 0.24; // Oscillates at 12V at 0.48
+    float D = 1;
+
+    float I = 0.0;
+
+    tm->set_position({0,0});
+    tm->set_heading(0);
+
+    drive_to_position_PID({36, 0}, P, I, D, 5000);
+
 }
 
 void AutoDrive::tune_PID_with_gradient_descent() {
 
     const int ITERATIONS = 100;
-    const float LEARNING_RATE = 0.01;
+    const float LEARNING_RATE = 0.0001;
 
 
-    const float MIN = 0.5;
+    const float MIN = 0.15;
     const float MAX = 1.5;
 
-    float P = 0.5;
+    float P = 0.3;
     float I = 0.0;
     float D = 0.05;
     float E = 0; // Error (settling time)
@@ -29,12 +43,12 @@ void AutoDrive::tune_PID_with_gradient_descent() {
     float prev_D = 0;
     float prev_E = 0;
 
-    float TIMEOUT = 10000; // 10,000ms = 10s timeout
-    float E_AT_TIMEOUT = 20000; // Large number for E if it times out (basically 20 seconds)
+    float TIMEOUT = 3000; // 10,000ms = 10s timeout
+   // float E_AT_TIMEOUT = 2000; // Large number for E if it times out (basically 20 seconds)
     int direction = 1;
     const int distance = 36; // Inches
     
-    Logger log(hw, "gradient_descent.csv", {"Distance (in)", "P", "I", "D","Settling_Time (ms)"}); 
+    Logger log(hw, "gradient_descent.csv", {"Distance (in)", "P", "I", "D","Over/undershoot (in)"}); 
 
     // Only tuning PD for now
     // Drive forward and backward
@@ -49,8 +63,9 @@ void AutoDrive::tune_PID_with_gradient_descent() {
         hw->controller.Screen.print("D: %.4lf\n", D);
 
         i % 2 == 0 ? direction = 1 : direction = -1; // Forward on even is, backward on negative i
-        E = drive_to_position_PID({distance * direction, 0}, P, I, D, TIMEOUT);
-        if (E >= TIMEOUT || E <= 500) E = E_AT_TIMEOUT; // If E greater than timeout or didn't move, set large error
+        E = drive_to_position_PID({distance * direction, 0}, P, I, D, TIMEOUT); 
+        E = fabs(E); // Distance to goal
+        //if (E >= TIMEOUT || E <= 500) E = E_AT_TIMEOUT; // If E greater than timeout or didn't move, set large error
 
         log.add_data({distance, P, I, D, E});
         hw->controller.Screen.setCursor(3,1);
@@ -141,8 +156,8 @@ double AutoDrive::drive_to_position_PID(std::pair<double, double> position, doub
     // Controls voltage to prevent overshot.
     PID overshoot_PID(  hw, 
                         0,  // Distance setpoint
-                        -6, // Max output voltage
-                        6, // Min output voltage
+                        -12, // Max output voltage
+                        12, // Min output voltage
                         P, // P
                         I, // I
                         D); // D
@@ -162,5 +177,6 @@ double AutoDrive::drive_to_position_PID(std::pair<double, double> position, doub
     hw->drivetrain.stop(); // Stop wheels
     vex::wait(50, vex::timeUnits::msec); // Wait for odometry wheels to update
     
-    return hw->brain.timer(vex::timeUnits::msec) -  init_timestamp;
+    //return hw->brain.timer(vex::timeUnits::msec) -  init_timestamp;
+    return tm->get_signed_distance_to_position(position);
 }
