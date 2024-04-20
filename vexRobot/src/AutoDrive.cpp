@@ -27,15 +27,15 @@ void AutoDrive::hand_tune_PID() {
 void AutoDrive::tune_PID_with_gradient_descent() {
 
     const int ITERATIONS = 100;
-    const float LEARNING_RATE = 0.0001;
+    const float LEARNING_RATE = 0.001;
 
 
-    const float MIN = 0.15;
+    const float MIN = 0.05;
     const float MAX = 1.5;
 
     float P = 0.3;
     float I = 0.0;
-    float D = 0.05;
+    float D = 0.2;
     float E = 0; // Error (settling time)
 
     float prev_P = 0;
@@ -53,18 +53,18 @@ void AutoDrive::tune_PID_with_gradient_descent() {
     // Only tuning PD for now
     // Drive forward and backward
     for (int i = 0; i < ITERATIONS; i++) {
-        tm->set_position({0,0});
-        tm->set_heading(0);
-        
         hw->controller.Screen.clearScreen();
         hw->controller.Screen.setCursor(1,1);
         hw->controller.Screen.print("P: %.4lf", P);
         hw->controller.Screen.setCursor(2,1);
         hw->controller.Screen.print("D: %.4lf\n", D);
 
-        i % 2 == 0 ? direction = 1 : direction = -1; // Forward on even is, backward on negative i
-        E = drive_to_position_PID({distance * direction, 0}, P, I, D, TIMEOUT); 
-        E = fabs(E); // Distance to goal
+        tm->set_position({0,0});
+        tm->set_heading(0);
+
+        //i % 2 == 0 ? direction = 1 : direction = -1; // Forward on even is, backward on negative i
+        E = drive_to_position_PID({distance, 0}, P, I, D, TIMEOUT); // * Direction
+        //E = fabs(E); // Distance to goal
         //if (E >= TIMEOUT || E <= 500) E = E_AT_TIMEOUT; // If E greater than timeout or didn't move, set large error
 
         log.add_data({distance, P, I, D, E});
@@ -73,32 +73,29 @@ void AutoDrive::tune_PID_with_gradient_descent() {
 
     
         float P_diff = P - prev_P;
-        if (P_diff == 0) P_diff = 0.000000000001; // Avoid divide by 0 error
+        prev_P = P;
+        if (P_diff == 0) P = P - LEARNING_RATE; // Avoid divide by 0 error
+        else P = P - (E - prev_E) / P_diff * LEARNING_RATE;
 
-        P = P - (E - prev_E) / P_diff * LEARNING_RATE;
         if (P > MAX) P = MAX;
         else if (P < MIN) P = MIN;
 
-        // float I_diff = I - prev_I;
-        //if (I_diff == 0)) I_diff = 0.000000000001; // Avoid divide by 0 error
-        // I = P - (E - prev_E) / I_diff * LEARNING_RATE;
-        // if (I > MAX) I = MAX;
-        // else if (I < MIN) I = MIN;
-
         float D_diff = D - prev_D;
-        if (D_diff == 0) D_diff = 0.000000000001; // Avoid divide by 0 error
-        D = D - (E - prev_E) / D_diff * LEARNING_RATE;
+        prev_D = D;
+        if (D_diff == 0) D = D - LEARNING_RATE; // Avoid divide by 0 error
+        else D = D - (E - prev_E) / D_diff * LEARNING_RATE;
+
         if (D > MAX) D = MAX;
         else if (D < MIN) D = MIN;
 
         std::cout <<"P: " << P <<  ", D: " << D << std::endl;
 
         prev_E = E;
-        prev_P = P;
-        //prev_I = I;
-        prev_D = D;
-
-        vex::wait(5000, vex::timeUnits::msec); // Wait 5 sec
+        
+        vex::wait(1000, vex::timeUnits::msec); // Wait 3 sec
+        turn_relative(180, 15); // Turn around to prep for next run
+        vex::wait(3000, vex::timeUnits::msec); // Wait 3 sec
+        
     }
 
 
@@ -179,4 +176,26 @@ double AutoDrive::drive_to_position_PID(std::pair<double, double> position, doub
     
     //return hw->brain.timer(vex::timeUnits::msec) -  init_timestamp;
     return tm->get_signed_distance_to_position(position);
+}
+
+
+void AutoDrive::turn_relative(double relative_angle, double velocity) {
+    // Determines whether to rotate left or right based on the  shortest distance
+    if (360 - fabs(relative_angle) < relative_angle) relative_angle = relative_angle - 360;
+    //if (relative_angle > 180) 
+    double revolutions = relative_angle  * (rc->DRIVETRAIN_WIDTH) * M_PI 
+        / (360 * rc->WHEEL_CIRCUMFERENCE) * rc->DRIVETRAIN_GEAR_RATIO_MULTIPLIER;
+
+    hw->left_drivetrain_motors.resetPosition();
+    hw->right_drivetrain_motors.resetPosition();
+
+    hw->left_drivetrain_motors.spinFor(-revolutions, vex::rotationUnits::rev, velocity, 
+        vex::velocityUnits::pct, false);
+    hw->right_drivetrain_motors.spinFor(revolutions, vex::rotationUnits::rev, velocity, 
+        vex::velocityUnits::pct);
+
+    // Blocks other tasks from starting
+    while (fabs(hw->left_drivetrain_motors.velocity(vex::velocityUnits::pct)) > 0 
+        || fabs(hw->right_drivetrain_motors.velocity(vex::velocityUnits::pct)) > 0); 
+
 }

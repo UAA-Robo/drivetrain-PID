@@ -19,6 +19,13 @@ public:
 
     void hand_tune_PID();
 
+    /// @brief  Rotates to the relative angle  ONLY using encoders on wheels (no odometry).
+    ///     Good for turning that needs to be fast and might never get to position (ramming). 
+    /// @param relative_angle  Double that is the counterclockwise angle in degrees RELATIVE to 
+    ///     the current robot heading.
+    /// @param velocity  Velocity to turn at (%)
+    void turn_relative(double relative_angle, double velocity);
+
     
 
 private:
