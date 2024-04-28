@@ -85,7 +85,7 @@ void AutoDrive::tune_PID_with_gradient_descent() {
         E = drive_to_position_PID({distance * (i % 2 == 0 ? 1 : -1), 0}, P, I, D, TIMEOUT);
 
         log.add_data({distance, P, I, D, E});
-        display_error(hw, E);
+
 
         // Compute gradients
         float gradP = -(E - prev_E) / (P - prev_P);
