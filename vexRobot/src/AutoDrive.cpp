@@ -74,32 +74,39 @@ void AutoDrive::tune_PID_with_gradient_descent() {
 
     Adam adamP, adamD; // Adam optimizers for P and D
 
-    Logger log(hw, "gradient_descent.csv", {"Distance (in)", "P", "I", "D", "Over/undershoot (in)"});
+    Logger log(hw, "gradient_descent.csv", { "Distance (in)", "P", "I", "D", "Over/undershoot (in)"});
 
     for (int i = 0; i < ITERATIONS; i++) {
-        clear_and_set_screen(hw, P, D); // Clear the screen and display P and D
+        //clear_and_set_screen(hw, P, D); // Clear the screen and display P and D
 
         tm->set_position({0,0});
         tm->set_heading(0);
 
-        E = drive_to_position_PID({distance * (i % 2 == 0 ? 1 : -1), 0}, P, I, D, TIMEOUT);
+        E = drive_to_position_PID({distance, 0}, P, I, D, TIMEOUT); // * Direction
+        E = fabs(E); // Distance to goal
 
         log.add_data({distance, P, I, D, E});
 
 
         // Compute gradients
         float gradP = -(E - prev_E) / (P - prev_P);
+        prev_P = P;
         float gradD = -(E - prev_E) / (D - prev_D);
+        prev_D = D;
 
         // Update P and D using Adam
-        P = std::clamp(P + adamP.GetAdjustedDerivative(gradP, LEARNING_RATE), MIN, MAX);
-        D = std::clamp(D + adamD.GetAdjustedDerivative(gradD, LEARNING_RATE), MIN, MAX);
+        P = P + adamP.GetAdjustedDerivative(gradP, LEARNING_RATE);
+        if (P < MIN) P = MIN;
+        else if (P > MAX) P = MAX;
+
+        D = D + adamD.GetAdjustedDerivative(gradD, LEARNING_RATE);
+        if (D < MIN) D = MIN;
+        else if (D > MAX) D = MAX;
 
         // Logging and waiting
-        std::cout << "P: " << P << ", D: " << D << std::endl;
+        std::cout << "i:" << i <<  ", P: " << P << ", D: " << D <<  ", E: " << E << std::endl;
         prev_E = E;
-        prev_P = P;
-        prev_D = D;
+
         
         vex::wait(1000, vex::timeUnits::msec); // Wait 1 sec
         turn_relative(180, 15); // Turn around
