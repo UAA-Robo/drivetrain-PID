@@ -24,121 +24,86 @@ void AutoDrive::hand_tune_PID() {
 
 }
 
-void AutoDrive::tune_PID_with_gradient_descent() {
+struct Adam
+{
+    // Internal state
+    float m = 0.0f;
+    float v = 0.0f;
+ 
+    // Internal state calculated for convenience
+    // If you have a bunch of derivatives, you would probably want to store / calculate these once
+    // for the entire gradient, instead of each derivative like this is doing.
+    float beta1Decayed = 1.0f;
+    float beta2Decayed = 1.0f;
+ 
+    float GetAdjustedDerivative(float derivative, float alpha)
+    {
+        // Adam parameters
+        static const float c_beta1 = 0.9f;
+        static const float c_beta2 = 0.999f;
+        static const float c_epsilon = 1e-8f;
+ 
+        // exponential moving average of first and second moment
+        m = c_beta1 * m + (1.0f - c_beta1) * derivative;
+        v = c_beta2 * v + (1.0f - c_beta2) * derivative * derivative;
+ 
+        // bias correction
+        beta1Decayed *= c_beta1;
+        beta2Decayed *= c_beta2;
+        float mhat = m / (1.0f - beta1Decayed);
+        float vhat = v / (1.0f - beta2Decayed);
+ 
+        // Adam adjusted derivative
+        return alpha * mhat / (std::sqrt(vhat) + c_epsilon);
+    }
+};
 
+
+void AutoDrive::tune_PID_with_gradient_descent() {
     const int ITERATIONS = 100;
     const float LEARNING_RATE = 0.001;
+    const float MIN = 0.00005;
+    const float MAX = 10.5;
+    const int TIMEOUT = 3000; // ms
+    const int distance = 36; // Inches
 
-
-    const float MIN = 0.05;
-    const float MAX = 1.5;
-
-    float P = 0.3;
-    float I = 0.0;
-    float D = 0.2;
+    float P = 0.3, I = 0.0, D = 0.2;
+    float prev_P = 0,  prev_I = 0, prev_D = 0;
     float E = 0; // Error (settling time)
-
-    float prev_P = 0;
-    //float prev_I = I;
-    float prev_D = 0;
     float prev_E = 0;
 
-    float TIMEOUT = 3000; // 10,000ms = 10s timeout
-   // float E_AT_TIMEOUT = 2000; // Large number for E if it times out (basically 20 seconds)
-    int direction = 1;
-    const int distance = 36; // Inches
-    
-    Logger log(hw, "gradient_descent.csv", {"Distance (in)", "P", "I", "D","Over/undershoot (in)"}); 
+    Adam adamP, adamD; // Adam optimizers for P and D
 
-    // Only tuning PD for now
-    // Drive forward and backward
+    Logger log(hw, "gradient_descent.csv", {"Distance (in)", "P", "I", "D", "Over/undershoot (in)"});
+
     for (int i = 0; i < ITERATIONS; i++) {
-        hw->controller.Screen.clearScreen();
-        hw->controller.Screen.setCursor(1,1);
-        hw->controller.Screen.print("P: %.4lf", P);
-        hw->controller.Screen.setCursor(2,1);
-        hw->controller.Screen.print("D: %.4lf\n", D);
+        clear_and_set_screen(hw, P, D); // Clear the screen and display P and D
 
         tm->set_position({0,0});
         tm->set_heading(0);
 
-        //i % 2 == 0 ? direction = 1 : direction = -1; // Forward on even is, backward on negative i
-        E = drive_to_position_PID({distance, 0}, P, I, D, TIMEOUT); // * Direction
-        //E = fabs(E); // Distance to goal
-        //if (E >= TIMEOUT || E <= 500) E = E_AT_TIMEOUT; // If E greater than timeout or didn't move, set large error
+        E = drive_to_position_PID({distance * (i % 2 == 0 ? 1 : -1), 0}, P, I, D, TIMEOUT);
 
         log.add_data({distance, P, I, D, E});
-        hw->controller.Screen.setCursor(3,1);
-        hw->controller.Screen.print("E: %.4lf\n", E);
+        display_error(hw, E);
 
-    
-        float P_diff = P - prev_P;
-        prev_P = P;
-        if (P_diff == 0) P = P - LEARNING_RATE; // Avoid divide by 0 error
-        else P = P - (E - prev_E) / P_diff * LEARNING_RATE;
+        // Compute gradients
+        float gradP = -(E - prev_E) / (P - prev_P);
+        float gradD = -(E - prev_E) / (D - prev_D);
 
-        if (P > MAX) P = MAX;
-        else if (P < MIN) P = MIN;
+        // Update P and D using Adam
+        P = std::clamp(P + adamP.GetAdjustedDerivative(gradP, LEARNING_RATE), MIN, MAX);
+        D = std::clamp(D + adamD.GetAdjustedDerivative(gradD, LEARNING_RATE), MIN, MAX);
 
-        float D_diff = D - prev_D;
-        prev_D = D;
-        if (D_diff == 0) D = D - LEARNING_RATE; // Avoid divide by 0 error
-        else D = D - (E - prev_E) / D_diff * LEARNING_RATE;
-
-        if (D > MAX) D = MAX;
-        else if (D < MIN) D = MIN;
-
-        std::cout <<"P: " << P <<  ", D: " << D << std::endl;
-
+        // Logging and waiting
+        std::cout << "P: " << P << ", D: " << D << std::endl;
         prev_E = E;
+        prev_P = P;
+        prev_D = D;
         
-        vex::wait(1000, vex::timeUnits::msec); // Wait 3 sec
-        turn_relative(180, 15); // Turn around to prep for next run
+        vex::wait(1000, vex::timeUnits::msec); // Wait 1 sec
+        turn_relative(180, 15); // Turn around
         vex::wait(3000, vex::timeUnits::msec); // Wait 3 sec
-        
-    }
-
-
-}
-
-void AutoDrive::random_PID() {
-
-    float I = 0.0;
-
-
-    float TIMEOUT = 5000; // 5,000ms = 5s timeout
-    int direction = 1;
-    const int distance = 36; // Inches
-    float settling_time = 0;
-
-    const float MIN = 0.0;
-    const float MAX = 1.5;
-    const float STEP = 0.1;
-    int i = 0;
-
-    Logger log(hw, "random_PID.csv", {"Distance (in)", "P", "I", "D","Settling_Time (ms)"}); 
-
-
-    for (double P=MIN; P <= MAX; P+= STEP) {
-
-        for (double D=MIN; D <=MAX; D += STEP) {
-            tm->set_position({0,0});
-            tm->set_heading(0);
-
-            i % 2 == 0 ? direction = 1 : direction = -1; // Forward on even is, backward on negative i
-            i++;
-
-            settling_time = drive_to_position_PID({distance * direction, 0}, P, I, D, TIMEOUT);
-            log.add_data({distance, P, I, D, settling_time});
-
-            hw->controller.Screen.clearScreen();
-            hw->controller.Screen.setCursor(1,1);
-            hw->controller.Screen.print("P: %.4lf", P);
-            hw->controller.Screen.setCursor(2,1);
-            hw->controller.Screen.print("D: %.4lf\n", D);
-
-            vex::wait(1000, vex::timeUnits::msec); // Wait 1 sec
-        }
     }
 }
 
